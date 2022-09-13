@@ -22,6 +22,7 @@ class Processor : AbstractProcessor() {
         val kaptKotlinGeneratedDir = processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]
             ?: return false
 
+        val functions = ArrayList<FunSpec.Builder>()
         roundEnv?.getElementsAnnotatedWith(AyanAPI::class.java)?.forEach { element ->
             val input = element.enclosedElements.let {
                 it.firstOrNull { it.simpleName.endsWith("Input") }?.let {
@@ -33,6 +34,7 @@ class Processor : AbstractProcessor() {
                     ParameterSpec.builder("output", it.asType().asTypeName().copy(nullable = true))
                 }
             }
+
             val funcBuilder = FunSpec.builder("call" + element.simpleName)
                 .receiver(Class.forName("ir.ayantech.ayannetworking.api.AyanApi"))
             if (input != null) funcBuilder.addParameter(input.build())
@@ -53,10 +55,12 @@ class Processor : AbstractProcessor() {
             )
             funcBuilder.addStatement(if (input != null) "input)" else ")")
             funcBuilder.addStatement("{ callback(${if (output != null) "it" else ""}) }")
-            FileSpec.builder("ir.ayantech.networking", "APIs")
-                .addFunction(funcBuilder.build()).build()
-                .writeTo(File(kaptKotlinGeneratedDir))
+            functions.add(funcBuilder)
         }
+        if (functions.isNotEmpty())
+            FileSpec.builder("ir.ayantech.networking", "APIs").also { fileBuilder ->
+                functions.forEach { fileBuilder.addFunction(it.build()) }
+            }.build().writeTo(File(kaptKotlinGeneratedDir))
         return true
     }
 
