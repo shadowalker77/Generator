@@ -1,10 +1,8 @@
 package com.alirezabdn.generator
 
-import com.alirezabdn.generator.AyanAPI
-
 @AyanAPI
 class GetEndUserInquiryHistoryDetail {
-    data class Input(val InquiryType: String)
+//    data class Input(val InquiryType: String)
 
     data class Output(
         val InquiryHistory: ArrayList<InquiryModel>,

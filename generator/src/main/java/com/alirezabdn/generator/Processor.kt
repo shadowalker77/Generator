@@ -33,7 +33,6 @@ class Processor : AbstractProcessor() {
                     ParameterSpec.builder("output", it.asType().asTypeName().copy(nullable = true))
                 }
             }
-            val t = TypeVariableName("T")
             val funcBuilder = FunSpec.builder("call" + element.simpleName)
                 .receiver(Class.forName("ir.ayantech.ayannetworking.api.AyanApi"))
             if (input != null) funcBuilder.addParameter(input.build())
@@ -47,10 +46,14 @@ class Processor : AbstractProcessor() {
                     ).build()
                 )
             }
+            val endPoint =
+                element.getAnnotation(AyanAPI::class.java).value.ifEmpty { element.simpleName }
             funcBuilder.addStatement(
-                "this.simpleCall<${output?.build()?.toString()?.replace("output: ", "")}>(\"${element.simpleName}\","
+                "this.simpleCall<${
+                    output?.build()?.toString()?.replace("output: ", "")
+                }>(\"${endPoint}\","
             )
-            funcBuilder.addStatement("input)")
+            funcBuilder.addStatement(if (input != null) "input)" else ")")
             funcBuilder.addStatement("{ callback(it) }")
             FileSpec.builder("ir.ayantech.networking", "APIs")
                 .addFunction(funcBuilder.build()).build()
