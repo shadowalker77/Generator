@@ -36,25 +36,23 @@ class Processor : AbstractProcessor() {
             val funcBuilder = FunSpec.builder("call" + element.simpleName)
                 .receiver(Class.forName("ir.ayantech.ayannetworking.api.AyanApi"))
             if (input != null) funcBuilder.addParameter(input.build())
-            if (output != null) {
-                funcBuilder.addParameter(
-                    ParameterSpec.builder(
-                        "callback", LambdaTypeName.get(
-                            parameters = arrayOf(output.build()),
-                            returnType = Unit::class.asClassName()
-                        )
-                    ).build()
-                )
-            }
+            funcBuilder.addParameter(
+                ParameterSpec.builder(
+                    "callback", LambdaTypeName.get(
+                        parameters = if (output != null) arrayOf(output.build()) else arrayOf(),
+                        returnType = Unit::class.asClassName()
+                    )
+                ).build()
+            )
             val endPoint =
-                element.getAnnotation(AyanAPI::class.java).value.ifEmpty { element.simpleName }
+                element.getAnnotation(AyanAPI::class.java).endPoint.ifEmpty { element.simpleName }
             funcBuilder.addStatement(
                 "this.simpleCall<${
-                    output?.build()?.toString()?.replace("output: ", "")
+                    output?.build()?.toString()?.replace("output: ", "") ?: "Void"
                 }>(\"${endPoint}\","
             )
             funcBuilder.addStatement(if (input != null) "input)" else ")")
-            funcBuilder.addStatement("{ callback(it) }")
+            funcBuilder.addStatement("{ callback(${if (output != null) "it" else ""}) }")
             FileSpec.builder("ir.ayantech.networking", "APIs")
                 .addFunction(funcBuilder.build()).build()
                 .writeTo(File(kaptKotlinGeneratedDir))
