@@ -1,11 +1,13 @@
 package com.alirezabdn.generator
 
 import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.io.File
 import javax.annotation.processing.AbstractProcessor
 import javax.annotation.processing.RoundEnvironment
 import javax.annotation.processing.SupportedSourceVersion
 import javax.lang.model.SourceVersion
+import javax.lang.model.element.Element
 import javax.lang.model.element.TypeElement
 
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
@@ -29,33 +31,69 @@ class Processor : AbstractProcessor() {
                     ParameterSpec.builder("input", it.asType().asTypeName())
                 }
             }
-            val output = element.enclosedElements.let {
+            var outputClass: Element? = null
+            val nullableOutput = element.enclosedElements.let {
                 it.firstOrNull { it.simpleName.endsWith("Output") }?.let {
+                    outputClass = it
                     ParameterSpec.builder("output", it.asType().asTypeName().copy(nullable = true))
                 }
             }
+            val nonNullableOutput = element.enclosedElements.let {
+                it.firstOrNull { it.simpleName.endsWith("Output") }?.let {
+                    ParameterSpec.builder("output", it.asType().asTypeName())
+                }
+            }
 
-            val funcBuilder = FunSpec.builder("call" + element.simpleName)
+            //------------------------------create simple call -------------------------------------
+            val simpleCallFuncBuilder = FunSpec.builder("simpleCall" + element.simpleName)
                 .receiver(Class.forName("ir.ayantech.ayannetworking.api.AyanApi"))
-            if (input != null) funcBuilder.addParameter(input.build())
-            funcBuilder.addParameter(
+            if (input != null) simpleCallFuncBuilder.addParameter(input.build())
+            simpleCallFuncBuilder.addParameter(
                 ParameterSpec.builder(
                     "callback", LambdaTypeName.get(
-                        parameters = if (output != null) arrayOf(output.build()) else arrayOf(),
+                        parameters = if (nullableOutput != null) arrayOf(nullableOutput.build()) else arrayOf(),
                         returnType = Unit::class.asClassName()
                     )
                 ).build()
             )
             val endPoint =
                 element.getAnnotation(AyanAPI::class.java).endPoint.ifEmpty { element.simpleName }
-            funcBuilder.addStatement(
+            simpleCallFuncBuilder.addStatement(
                 "this.simpleCall<${
-                    output?.build()?.toString()?.replace("output: ", "") ?: "Void"
+                    nullableOutput?.build()?.toString()?.replace("output: ", "") ?: "Void"
                 }>(\"${endPoint}\","
             )
-            funcBuilder.addStatement(if (input != null) "input)" else ")")
-            funcBuilder.addStatement("{ callback(${if (output != null) "it" else ""}) }")
-            functions.add(funcBuilder)
+            simpleCallFuncBuilder.addStatement(if (input != null) "input)" else ")")
+            simpleCallFuncBuilder.addStatement("{ callback(${if (nullableOutput != null) "it" else ""}) }")
+            //--------------------------------------------------------------------------------------
+
+            //-----------------------------------create call ---------------------------------------
+            val callFuncBuilder = FunSpec.builder("call" + element.simpleName)
+                .receiver(Class.forName("ir.ayantech.ayannetworking.api.AyanApi"))
+            if (input != null) callFuncBuilder.addParameter(input.build())
+            callFuncBuilder.addParameter(
+                ParameterSpec.builder(
+                    "callback", LambdaTypeName.get(
+                        parameters = arrayOf<ParameterSpec>(),
+                        returnType = Unit::class.asClassName(),
+                        receiver = Class.forName("ir.ayantech.ayannetworking.api.AyanApiCallback")
+                            .asClassName().parameterizedBy(
+                                outputClass?.asType()?.asTypeName() ?: Void::class.java.asTypeName()
+                            )
+                    )
+                ).build()
+            )
+            callFuncBuilder.addStatement(
+                "this.call<${
+                    nonNullableOutput?.build()?.toString()?.replace("output: ", "") ?: "Void"
+                }>(\"${endPoint}\","
+            )
+            callFuncBuilder.addStatement(if (input != null) "input" else "")
+            callFuncBuilder.addStatement(",callback)")
+            //--------------------------------------------------------------------------------------
+
+            functions.add(simpleCallFuncBuilder)
+            functions.add(callFuncBuilder)
         }
         if (functions.isNotEmpty())
             FileSpec.builder("ir.ayantech.networking", "APIs").also { fileBuilder ->
