@@ -88,7 +88,7 @@ class Processor : AbstractProcessor() {
                     nonNullableOutput?.build()?.toString()?.replace("output: ", "") ?: "Void"
                 }>(\"${endPoint}\","
             )
-            callFuncBuilder.addStatement(if (input != null) "input" else "")
+            callFuncBuilder.addStatement(if (input != null) "input" else "null")
             callFuncBuilder.addStatement(",callback)")
             //--------------------------------------------------------------------------------------
 

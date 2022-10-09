@@ -19,7 +19,7 @@ publishing {
         mavenJava(MavenPublication) {
             groupId = 'com.github.shadowalker77'
             artifactId = 'generator'
-            version = '0.1.4'
+            version = '0.2.0'
 
             from components.java
         }

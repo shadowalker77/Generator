@@ -3,10 +3,7 @@ package com.alirezabdn.generator
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import ir.ayantech.ayannetworking.api.AyanApi
-import ir.ayantech.networking.callGetEndUserInquiryHistoryDetail
-import ir.ayantech.networking.callMyApi
-import ir.ayantech.networking.simpleCallGetEndUserInquiryHistoryDetail
-import ir.ayantech.networking.simpleCallMyApi
+import ir.ayantech.networking.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -15,8 +12,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        ayanAPI.simpleCallMyApi(MyApi.Input("test")) { }
-        ayanAPI.callMyApi(MyApi.Input("test")) {
+        ayanAPI.simpleCallOnlyInputApi(OnlyInputApi.Input("test")) { }
+        ayanAPI.callOnlyInputApi(OnlyInputApi.Input("test")) {
             success { }
             failure { }
             changeStatusCallback { }
@@ -29,6 +26,12 @@ class MainActivity : AppCompatActivity() {
         ayanAPI.callGetEndUserInquiryHistoryDetail(
             GetEndUserInquiryHistoryDetail.Input("Test")
         ) {
+            success { }
+            failure { }
+            changeStatusCallback { }
+        }
+        ayanAPI.simpleCallOnlyOutputApi {  }
+        ayanAPI.callOnlyOutputApi {
             success { }
             failure { }
             changeStatusCallback { }

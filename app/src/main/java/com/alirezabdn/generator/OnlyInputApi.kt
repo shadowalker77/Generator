@@ -1,6 +1,6 @@
 package com.alirezabdn.generator
 
 @AyanAPI(endPoint = "DesiredName")
-class MyApi {
+class OnlyInputApi {
     data class Input(val test: String)
 }
