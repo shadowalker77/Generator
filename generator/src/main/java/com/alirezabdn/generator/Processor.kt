@@ -44,10 +44,15 @@ class Processor : AbstractProcessor() {
                 }
             }
 
+            val endPoint =
+                element.getAnnotation(AyanAPI::class.java).endPoint.ifEmpty { element.simpleName }
+            val endPointParameterSpec = ParameterSpec.builder("endPoint", (String::class)).defaultValue("%S", "$endPoint")
+
             //------------------------------create simple call -------------------------------------
             val simpleCallFuncBuilder = FunSpec.builder("simpleCall" + element.simpleName)
                 .receiver(Class.forName("ir.ayantech.ayannetworking.api.AyanApi"))
             if (input != null) simpleCallFuncBuilder.addParameter(input.build())
+            simpleCallFuncBuilder.addParameter(endPointParameterSpec.build())
             simpleCallFuncBuilder.addParameter(
                 ParameterSpec.builder(
                     "callback", LambdaTypeName.get(
@@ -56,12 +61,10 @@ class Processor : AbstractProcessor() {
                     )
                 ).build()
             )
-            val endPoint =
-                element.getAnnotation(AyanAPI::class.java).endPoint.ifEmpty { element.simpleName }
             simpleCallFuncBuilder.addStatement(
                 "this.simpleCall<${
                     nullableOutput?.build()?.toString()?.replace("output: ", "") ?: "Void"
-                }>(\"${endPoint}\","
+                }>(endPoint,"
             )
             simpleCallFuncBuilder.addStatement(if (input != null) "input)" else ")")
             simpleCallFuncBuilder.addStatement("{ callback(${if (nullableOutput != null) "it" else ""}) }")
@@ -71,6 +74,7 @@ class Processor : AbstractProcessor() {
             val callFuncBuilder = FunSpec.builder("call" + element.simpleName)
                 .receiver(Class.forName("ir.ayantech.ayannetworking.api.AyanApi"))
             if (input != null) callFuncBuilder.addParameter(input.build())
+            callFuncBuilder.addParameter(endPointParameterSpec.build())
             callFuncBuilder.addParameter(
                 ParameterSpec.builder(
                     "callback", LambdaTypeName.get(
@@ -86,7 +90,7 @@ class Processor : AbstractProcessor() {
             callFuncBuilder.addStatement(
                 "this.call<${
                     nonNullableOutput?.build()?.toString()?.replace("output: ", "") ?: "Void"
-                }>(\"${endPoint}\","
+                }>(endPoint,"
             )
             callFuncBuilder.addStatement(if (input != null) "input" else "null")
             callFuncBuilder.addStatement(",callback)")
